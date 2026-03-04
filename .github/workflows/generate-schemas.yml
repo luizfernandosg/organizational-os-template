@@ -1,0 +1,38 @@
+name: Generate EIP-4824 Schemas
+
+on:
+  push:
+    paths:
+      - 'data/**'
+      - 'content/meetings/**'
+      - 'content/projects/**'
+      - 'federation.yaml'
+  schedule:
+    - cron: '0 0 * * *'  # Daily at midnight
+  workflow_dispatch:
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '22'
+      
+      - name: Install dependencies
+        run: npm install
+      
+      - name: Generate schemas
+        run: npm run generate:schemas
+      
+      - name: Commit schemas
+        run: |
+          git config user.name "Org OS Bot"
+          git config user.email "bot@organizational-os.org"
+          git add .well-known/
+          git diff --staged --quiet || git commit -m "Auto-generate EIP-4824 schemas [skip ci]"
+          git push || echo "No changes to commit"

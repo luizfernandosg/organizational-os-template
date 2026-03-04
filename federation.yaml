@@ -1,0 +1,162 @@
+# Federation Manifest v3.0
+# Organizational OS — Agent-Native Workspace
+# Run `npm run setup` to configure this file interactively
+
+version: "3.0"
+spec: "organizational-os/3.0"
+
+# ── Identity ──────────────────────────────────────────────────────────────────
+identity:
+  name: "Your Organization Name"
+  type: "Organization"          # DAO | Cooperative | Foundation | Project | LocalNode | Hub
+  emoji: ""                     # e.g., 🌱 ⚡ 🌀
+  daoURI: "https://org.example.com/.well-known/dao.json"
+  chain: ""                     # e.g., eip155:100 (Gnosis Chain)
+  safe: ""                      # Gnosis Safe address
+  hats: null                    # Hats Protocol tree ID (integer)
+  gardens: ""                   # Gardens DAO contract address
+  onchain_registration:
+    enabled: false
+    chain: ""
+    contract_address: ""
+
+# ── Federation Network ─────────────────────────────────────────────────────────
+network: ""                     # e.g., regen-coordination
+hub: ""                         # e.g., github.com/regen-coordination/hub
+
+peers: []
+# peers:
+#   - name: "Partner Node"
+#     repo: "org/repo"
+#     url: "https://github.com/org/repo"
+#     trust: "read"             # full | read | none
+
+upstream:
+  - type: "template"
+    repository: "organizational-os/organizational-os-template"
+    url: "https://github.com/organizational-os/organizational-os-template"
+    relationship: "fork"
+    last_sync: ""
+    sync_frequency: "monthly"
+    remote_name: "upstream"
+
+downstream: []
+
+# ── Agent Configuration ────────────────────────────────────────────────────────
+agent:
+  runtime: "none"               # openclaw | cursor | custom | none
+  workspace: "."
+  skills:
+    - meeting-processor
+    - funding-scout
+    - knowledge-curator
+    - capital-flow
+    - schema-generator
+    - heartbeat-monitor
+  channels: []
+  # channels:
+  #   - telegram
+  #   - google-meet
+  #   - github
+  proactive: false
+  heartbeat_interval: "1h"
+
+# ── Knowledge Commons ─────────────────────────────────────────────────────────
+knowledge-commons:
+  enabled: false
+  shared-domains: []
+  # shared-domains:
+  #   - "regenerative-finance"
+  #   - "local-governance"
+  sync-protocol: "git"          # git | koi-net | manual
+  publish:
+    meetings: false
+    projects: false
+    funding: false
+  subscribe: []
+
+# ── Cross-Repo Integrations ───────────────────────────────────────────────────
+# Repos this template integrates with (agent runtimes, knowledge infra, publishing, grants)
+integrations:
+  agent_runtimes:
+    - name: "openclaw"
+      repo: "organizational-os/openclaw-source"
+      url: "https://github.com/organizational-os/openclaw-source"
+      role: "primary-runtime"
+    - name: "regen-eliza"
+      repo: "regen-coordination/regen_eliza-refi_dao"
+      url: "https://github.com/regen-coordination/regen_eliza-refi_dao"
+      role: "alternative-runtime"
+  knowledge_infrastructure:
+    - name: "koi-net"
+      repo: "organizational-os/koi-net"
+      url: "https://github.com/organizational-os/koi-net"
+      role: "real-time-sync"
+    - name: "koi-net-integration"
+      repo: "organizational-os/koi-net-integration"
+      url: "https://github.com/organizational-os/koi-net-integration"
+      role: "typescript-bridge"
+  publishing:
+    - name: "quartz-refi-template"
+      repo: "organizational-os/quartz-refi-template"
+      url: "https://github.com/organizational-os/quartz-refi-template"
+      role: "documentation-site"
+  grants:
+    - name: "opengrants-os"
+      repo: "organizational-os/opengrants-os"
+      url: "https://github.com/organizational-os/opengrants-os"
+      role: "grants-platform"
+
+# ── Operational Packages ──────────────────────────────────────────────────────
+packages:
+  knowledge_base: true
+  meetings: false
+  projects: false
+  finances: false
+  coordination: false
+  webapps: false
+  web3: false
+
+# ── Customizations ────────────────────────────────────────────────────────────
+customizations:
+  - path: "SOUL.md"
+    reason: "Organization-specific values and mission"
+    type: "addition"
+    maintain_on_sync: true
+  - path: "IDENTITY.md"
+    reason: "Organization identity"
+    type: "addition"
+    maintain_on_sync: true
+  - path: "data/"
+    reason: "Operational data"
+    type: "addition"
+    maintain_on_sync: true
+  - path: "memory/"
+    reason: "Organizational memory"
+    type: "addition"
+    maintain_on_sync: true
+  - path: "skills/"
+    reason: "Organization-specific skills"
+    type: "addition"
+    maintain_on_sync: true
+
+# ── Governance ────────────────────────────────────────────────────────────────
+governance:
+  maintainers:
+    - name: "Organization Team"
+      role: "owner"
+  decision_model: "consensus"   # consensus | voting | hierarchical | delegated
+  proposal_threshold: "Consensus required"
+
+# ── Platforms ─────────────────────────────────────────────────────────────────
+platforms:
+  primary: "github"
+  deployment: "github-pages"    # github-pages | railway | vercel | self-hosted
+  domain: ""
+  mirrors: []
+
+# ── Metadata ─────────────────────────────────────────────────────────────────
+metadata:
+  created: ""
+  last_updated: ""
+  framework_version: "3.0"

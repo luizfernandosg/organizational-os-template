@@ -1,0 +1,48 @@
+{
+  "name": "organizational-os-template",
+  "description": "GitHub-based operational workspace template with EIP-4824 compliance",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/organizational-os/organizational-os-template.git"
+  },
+  "scripts": {
+    "quartz": "./quartz/bootstrap-cli.mjs",
+    "setup": "node scripts/setup-org-os.mjs",
+    "setup:cursor": "node scripts/setup-cursor-rules.mjs",
+    "sync:upstream": "node scripts/sync-upstream.mjs",
+    "generate:schemas": "node scripts/generate-all-schemas.mjs",
+    "validate:schemas": "node scripts/validate-identity.mjs",
+    "docs": "npx quartz build --serve -d docs",
+    "check": "tsc --noEmit && npx prettier . --check",
+    "format": "npx prettier . --write"
+  },
+  "engines": {
+    "npm": ">=10.9.2",
+    "node": ">=22"
+  },
+  "keywords": [
+    "organizational-os",
+    "eip-4824",
+    "dao",
+    "operational-workspace",
+    "github",
+    "quartz"
+  ],
+  "bin": {
+    "quartz": "./quartz/bootstrap-cli.mjs"
+  },
+  "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "gray-matter": "^4.0.3",
+    "js-yaml": "^4.1.0",
+    "prettier": "^3.6.2"
+  },
+  "devDependencies": {
+    "@types/node": "^24.7.0",
+    "typescript": "^5.9.3"
+  }
+}
