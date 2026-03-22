@@ -68,6 +68,19 @@ if (isCancel(baseUrl)) {
   process.exit(0);
 }
 
+// ── New v3.1: Setup Path Selection ───────────────────────────────────────────
+
+const setupPath = await select({
+  message: 'Choose your setup path:',
+  options: [
+    { value: 'egregore', label: 'Egregore-assisted — AI memory + git-based coordination (recommended for teams)' },
+    { value: 'filesystem', label: 'Filesystem-native — Direct editing, minimal setup, human-centric' },
+    { value: 'hybrid', label: 'Hybrid — Combine both approaches (choose per-workflow)' }
+  ]
+});
+
+if (isCancel(setupPath)) { cancel('Setup cancelled'); process.exit(0); }
+
 // Select operational packages
 const packages = await multiselect({
   message: 'Which operational packages would you like to enable?',
@@ -77,7 +90,8 @@ const packages = await multiselect({
     { value: 'finances', label: 'Finances - Budget and expense tracking' },
     { value: 'coordination', label: 'Coordination - Multi-org coordination tools' },
     { value: 'webapps', label: 'Webapps - Interactive operational tools' },
-    { value: 'web3', label: 'Web3 - Optional blockchain features' }
+    { value: 'web3', label: 'Web3 - Optional blockchain features' },
+    { value: 'egregore', label: 'Egregore - AI memory layer for team coordination (Git-based, Claude Code/opencode)' }
   ],
   required: false
 });
@@ -252,7 +266,34 @@ const packageFlags = {
   finances: packages.includes('finances'),
   coordination: packages.includes('coordination'),
   webapps: packages.includes('webapps'),
-  web3: packages.includes('web3')
+  web3: packages.includes('web3'),
+  egregore: packages.includes('egregore') || setupPath === 'egregore' || setupPath === 'hybrid'
+};
+
+// ── Path-specific configuration ─────────────────────────────────────────────
+
+if (setupPath === 'egregore') {
+  // Egregore path: enable AI memory, set up git coordination
+  console.log('Configuring Egregore-assisted path...');
+  // Enable egregore if not already
+  if (!packageFlags.egregore) {
+    console.log('Note: Egregore package auto-enabled for this path.');
+  }
+} else if (setupPath === 'filesystem') {
+  // Filesystem path: minimal agent configuration
+  console.log('Configuring Filesystem-native path...');
+  // Reduce proactive agent settings
+} else if (setupPath === 'hybrid') {
+  // Hybrid path: both enabled, user chooses per-workflow
+  console.log('Configuring Hybrid path (both approaches available)...');
+}
+
+// Record setup path in memory
+const setupConfig = {
+  path: setupPath,
+  agentRuntime,
+  packages: packageFlags,
+  timestamp: new Date().toISOString()
 };
 
 federationContent = federationContent.replace(
@@ -393,6 +434,10 @@ ${packageFlags.meetings ? '- [Meetings](/meetings) - Meeting management\n' : ''}
 
 outro(`Setup complete for ${orgName}!
 
+Setup path: ${setupPath}
+Agent runtime: ${agentRuntime}
+Packages enabled: ${Object.entries(packageFlags).filter(([k,v]) => v).map(([k]) => k).join(', ') || 'none'}
+
 Next steps:
 1. Fill in SOUL.md — organization values, mission, voice
 2. Fill in IDENTITY.md — chain addresses, governance contracts
@@ -403,6 +448,11 @@ Next steps:
 7. Run BOOTSTRAP.md ritual if using an agent runtime
 8. Commit and push to deploy
 
+Path-specific notes:
+${setupPath === 'egregore' ? '- Egregore enabled: Run "/reflect" to capture decisions, "/handoff" for team notes' : ''}
+${setupPath === 'filesystem' ? '- Filesystem path: Edit files directly, agents optional' : ''}
+${setupPath === 'hybrid' ? '- Hybrid path: Choose per-workflow: edit directly OR use AI assistance' : ''}
+
 Memory entry created at: memory/${initDate}.md
-Agent runtime: ${agentRuntime}
+`);
 `);

@@ -251,7 +251,80 @@ EIP-4824 schemas in `.well-known/` are generated from `data/*.yaml` and package 
 
 ---
 
-## 10. Federation & Network
+## 10. Knowledge Commons
+
+This workspace implements the **Regen Agency Knowledge Commons** framework as the **upstream reference** for organizational OS implementations.
+
+### Knowledge Structure
+
+- **knowledge/INDEX.md** — Framework knowledge commons navigation
+- **knowledge/<domain>/** — Domain-specific framework patterns
+- **Template guidance** — How to implement knowledge commons in forks
+
+### Framework Domains
+
+| Domain | Description |
+|--------|-------------|
+| framework-standards | Organizational OS standards, schemas, specs |
+| template-usage | How to use and customize the template |
+| knowledge-infrastructure | Agent systems, knowledge graphs, federation |
+| agent-coordination | Multi-agent patterns, Agent Dojo concepts |
+
+### Framework Distribution
+
+As the **upstream framework**:
+- **Downstream sync**: Template changes flow to forked repositories
+- **Pattern extraction**: Working patterns from nodes become standards
+- **Version alignment**: Nodes sync with framework versions monthly
+- **Reference implementation**: Other nodes compare against this standard
+
+### Template Setup
+
+When creating a new organizational OS from this template:
+1. Fork or use as template
+2. Populate `federation.yaml` with your organization's details
+3. Create `knowledge/` directory and INDEX.md
+4. Connect to hub via federation.yaml peers/upstream
+
+See `knowledge/INDEX.md` for detailed framework documentation.
+
+## 11. Agent Dojo
+
+The **Agent Dojo** is the knowledge commons for AI agents learning to coordinate regenerative systems. This framework defines the structural patterns.
+
+### Agent Dojo Concept
+
+A distributed network where:
+- **Agents are first-class participants** — Knowledge structured for human AND agent consumption
+- **Knowledge flows to where it's needed** — Semantic routing, not hierarchical
+- **Local autonomy, global coherence** — Independence with shared patterns
+- **Learning is continuous** — Agents improve through operational experience
+
+### Framework Role
+
+As the **framework layer**, org-os defines:
+- **Structural patterns** — How knowledge commons are organized
+- **Sync protocols** — How knowledge flows between nodes
+- **Agent interfaces** — How agents interact with knowledge
+- **Semantic standards** — Shared vocabularies and schemas
+
+### Downstream Implementation
+
+Agent Dojo is implemented by operational nodes:
+- **Regen Coordination OS** — Hub knowledge aggregation and distribution
+- **ReFi DAO** — Articulation org knowledge and network coordination
+- **ReFi BCN** — Local node expertise and cooperative-Web3 bridging
+- **All network nodes** — Local context + network contribution
+
+### Participation
+
+Agents in organizational OS workspaces:
+- Use `skills/knowledge-curator/` for knowledge management
+- Follow patterns in `AGENTS.md` for coordination
+- Reference `federation.yaml` for network context
+- Contribute learnings back to framework evolution
+
+## 12. Federation & Network
 
 This workspace is part of a federation network (see `federation.yaml`).
 

@@ -116,6 +116,7 @@ packages:
   coordination: false
   webapps: false
   web3: false
+  egregore: false              # AI memory layer (Claude Code/opencode compatible)
 
 # ── Customizations ────────────────────────────────────────────────────────────
 customizations:

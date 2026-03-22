@@ -1,0 +1,430 @@
+{
+  "extraction_metadata": {
+    "timestamp": "2026-03-15T16:45:00Z",
+    "source_file": "2026-03-15-refi-coordination.md",
+    "extractor_version": "OPAL-1.0.0",
+    "profile": "regen"
+  },
+  "entities": [
+    {
+      "id": "person-maria-garcia",
+      "name": "Maria Garcia",
+      "type": "person",
+      "description": "Facilitator at ReFi DAO Barcelona",
+      "source": "2026-03-15-refi-coordination.md",
+      "confidence": 0.95,
+      "attributes": {
+        "role": "Facilitator",
+        "affiliation": "ReFi DAO Barcelona"
+      },
+      "mentions": [
+        { "timestamp": "15:05", "context": "Welcome everyone..." },
+        { "timestamp": "15:35", "context": "Coordinate with Impact Network..." }
+      ],
+      "action_items": [
+        {
+          "task": "Coordinate with Impact Network partnership lead",
+          "due_date": "2026-03-18",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "person-pedro-sanchez",
+      "name": "Pedro Sanchez",
+      "type": "person",
+      "description": "Developer at GreenDAO working on smart contracts",
+      "source": "2026-03-15-refi-coordination.md",
+      "confidence": 0.95,
+      "attributes": {
+        "role": "Developer",
+        "affiliation": "GreenDAO",
+        "skills": ["smart contracts", "testnet deployment", "integration"]
+      },
+      "mentions": [
+        { "timestamp": "15:08", "context": "Progress on quadratic funding contracts..." },
+        { "timestamp": "15:15", "context": "Presented circular funding research..." }
+      ],
+      "action_items": [
+        {
+          "task": "Finalize smart contract audit scope",
+          "due_date": "2026-03-22",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "person-ana-lopez",
+      "name": "Ana Lopez",
+      "type": "person",
+      "description": "UX Designer at Impact Network",
+      "source": "2026-03-15-refi-coordination.md",
+      "confidence": 0.95,
+      "attributes": {
+        "role": "UX Designer",
+        "affiliation": "Impact Network",
+        "skills": ["user research", "UI design", "mobile design"]
+      },
+      "mentions": [
+        { "timestamp": "15:15", "context": "Completed user research phase..." }
+      ],
+      "action_items": [
+        {
+          "task": "Complete UI mockups for mobile",
+          "due_date": "2026-03-25",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "person-carlos-ruiz",
+      "name": "Carlos Ruiz",
+      "type": "person",
+      "description": "Community Manager at ReFi DAO Barcelona",
+      "source": "2026-03-15-refi-coordination.md",
+      "confidence": 0.93,
+      "attributes": {
+        "role": "Community Manager",
+        "affiliation": "ReFi DAO Barcelona"
+      },
+      "mentions": [
+        { "timestamp": "15:25", "context": "Community updates: 127 active members..." }
+      ],
+      "action_items": [
+        {
+          "task": "Set up quadratic voting test instance",
+          "due_date": "2026-03-20",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "person-sofia-martinez",
+      "name": "Sofia Martinez",
+      "type": "person",
+      "description": "Funding Coordinator at Regen Foundation",
+      "source": "2026-03-15-refi-coordination.md",
+      "confidence": 0.95,
+      "attributes": {
+        "role": "Funding Coordinator",
+        "affiliation": "Regen Foundation"
+      },
+      "mentions": [
+        { "timestamp": "15:35", "context": "Q2 grant round opens April 1st..." }
+      ],
+      "action_items": [
+        {
+          "task": "Draft joint grant proposal",
+          "due_date": "2026-03-28",
+          "status": "pending"
+        }
+      ]
+    },
+    {
+      "id": "org-refi-dao-barcelona",
+      "name": "ReFi DAO Barcelona",
+      "type": "organization",
+      "description": "Local chapter of ReFi DAO focused on regenerative finance in Barcelona",
+      "source": "2026-03-15-refi-coordination.md",
+      "confidence": 0.98,
+      "attributes": {
+        "type": "DAO",
+        "location": "Barcelona",
+        "focus": "regenerative finance",
+        "members": 127
+      },
+      "mentions": [
+        { "section": "Participants" },
+        { "section": "Decisions Made" },
+        { "section": "Action Items" }
+      ]
+    },
+    {
+      "id": "org-greendao",
+      "name": "GreenDAO",
+      "type": "organization",
+      "description": "DAO focused on environmental projects and sustainable development",
+      "source": "2026-03-15-refi-coordination.md",
+      "confidence": 0.96,
+      "attributes": {
+        "type": "DAO",
+        "focus": "environmental sustainability",
+        "technology": "smart contracts"
+      },
+      "mentions": [
+        { "section": "Participants" },
+        { "section": "Decisions Made" }
+      ],
+      "relationships": [
+        { "type": "collaboration", "target": "org-refi-dao-barcelona" },
+        { "type": "collaboration", "target": "org-impact-network" }
+      ]
+    },
+    {
+      "id": "org-impact-network",
+      "name": "Impact Network",
+      "type": "organization",
+      "description": "Network connecting impact-focused projects and organizations",
+      "source": "2026-03-15-refi-coordination.md",
+      "confidence": 0.96,
+      "attributes": {
+        "type": "Network",
+        "focus": "social and environmental impact",
+        "services": ["design", "metrics", "coordination"]
+      },
+      "mentions": [
+        { "section": "Participants" },
+        { "section": "Decisions Made" },
+        { "section": "Community Updates" }
+      ],
+      "relationships": [
+        { "type": "partnership", "target": "org-refi-dao-barcelona" }
+      ]
+    },
+    {
+      "id": "org-regen-foundation",
+      "name": "Regen Foundation",
+      "type": "organization",
+      "description": "Foundation supporting regenerative economy through grants and coordination",
+      "source": "2026-03-15-refi-coordination.md",
+      "confidence": 0.94,
+      "attributes": {
+        "type": "Foundation",
+        "focus": "regenerative economy",
+        "grant_amount": "up to 50K REGEN"
+      },
+      "mentions": [
+        { "section": "Participants" },
+        { "section": "Funding Update" }
+      ]
+    },
+    {
+      "id": "org-community-council",
+      "name": "Community Council",
+      "type": "organization",
+      "description": "Governance body within ReFi DAO Barcelona",
+      "source": "2026-03-15-refi-coordination.md",
+      "confidence": 0.85,
+      "attributes": {
+        "type": "Governance Body",
+        "parent_org": "ReFi DAO Barcelona"
+      }
+    },
+    {
+      "id": "pattern-distributed-coordination",
+      "name": "Distributed Coordination",
+      "type": "pattern",
+      "description": "Holographic voting structures where decisions emerge from multiple small group deliberations rather than large plenary sessions",
+      "source": "2026-03-15-refi-coordination.md",
+      "confidence": 0.88,
+      "attributes": {
+        "category": "governance",
+        "application": "DAO decision making",
+        "principles": ["decentralization", "inclusion", "scalability"]
+      },
+      "mentions": [
+        { "section": "New Patterns & Concepts" }
+      ],
+      "relationships": [
+        { "type": "adopted_by", "target": "org-refi-dao-barcelona" }
+      ]
+    },
+    {
+      "id": "pattern-circular-funding",
+      "name": "Circular Funding Models",
+      "type": "pattern",
+      "description": "Funding mechanisms where returns from successful projects flow back into the funding pool, creating a sustainable cycle",
+      "source": "2026-03-15-refi-coordination.md",
+      "confidence": 0.87,
+      "attributes": {
+        "category": "economics",
+        "alignment": "regenerative economics",
+        "mechanism": "reinvestment"
+      },
+      "mentions": [
+        { "section": "New Patterns & Concepts" },
+        { "speaker": "Pedro Sanchez" }
+      ]
+    },
+    {
+      "id": "protocol-quadratic-voting",
+      "name": "Quadratic Voting",
+      "type": "protocol",
+      "description": "Voting mechanism that gives more voice to smaller contributors while preventing whale dominance",
+      "source": "2026-03-15-refi-coordination.md",
+      "confidence": 0.90,
+      "attributes": {
+        "category": "governance",
+        "application": "treasury allocation",
+        "properties": ["anti-plutocratic", "democratic", "sybil-resistant"]
+      },
+      "mentions": [
+        { "section": "New Patterns & Concepts" },
+        { "section": "Action Items" }
+      ],
+      "related_resources": [
+        "Gitcoin's quadratic funding research"
+      ]
+    },
+    {
+      "id": "concept-regenerative-finance",
+      "name": "Regenerative Finance",
+      "type": "concept",
+      "description": "Financial systems designed to restore and regenerate ecological and social systems",
+      "source": "2026-03-15-refi-coordination.md",
+      "confidence": 0.92,
+      "attributes": {
+        "domain": "finance",
+        "principles": ["sustainability", "restoration", "community"],
+        "abbreviation": "ReFi"
+      }
+    },
+    {
+      "id": "concept-soulbound-tokens",
+      "name": "Soulbound Tokens",
+      "type": "concept",
+      "description": "Non-transferable tokens representing credentials, reputation, or membership",
+      "source": "2026-03-15-refi-coordination.md",
+      "confidence": 0.85,
+      "attributes": {
+        "category": "identity",
+        "use_case": "participant verification",
+        "property": "non-transferable"
+      },
+      "mentions": [
+        { "context": "smart contract development" }
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "source": "person-pedro-sanchez",
+      "target": "org-greendao",
+      "type": "member_of",
+      "confidence": 0.95
+    },
+    {
+      "source": "person-maria-garcia",
+      "target": "org-refi-dao-barcelona",
+      "type": "facilitator_for",
+      "confidence": 0.95
+    },
+    {
+      "source": "person-ana-lopez",
+      "target": "org-impact-network",
+      "type": "member_of",
+      "confidence": 0.95
+    },
+    {
+      "source": "org-refi-dao-barcelona",
+      "target": "org-greendao",
+      "type": "collaborates_with",
+      "confidence": 0.90,
+      "context": "joint grant proposal"
+    },
+    {
+      "source": "org-refi-dao-barcelona",
+      "target": "org-impact-network",
+      "type": "partnership",
+      "confidence": 0.88
+    },
+    {
+      "source": "pattern-distributed-coordination",
+      "target": "org-refi-dao-barcelona",
+      "type": "adopted_by",
+      "confidence": 0.92
+    }
+  ],
+  "action_items": [
+    {
+      "id": "ai-1",
+      "task": "Finalize smart contract audit scope",
+      "owner": "person-pedro-sanchez",
+      "due_date": "2026-03-22",
+      "status": "pending",
+      "priority": "high",
+      "source_meeting": "2026-03-15-refi-coordination.md"
+    },
+    {
+      "id": "ai-2",
+      "task": "Complete UI mockups for mobile",
+      "owner": "person-ana-lopez",
+      "due_date": "2026-03-25",
+      "status": "pending",
+      "priority": "medium",
+      "source_meeting": "2026-03-15-refi-coordination.md"
+    },
+    {
+      "id": "ai-3",
+      "task": "Draft joint grant proposal",
+      "owner": "person-sofia-martinez",
+      "due_date": "2026-03-28",
+      "status": "pending",
+      "priority": "high",
+      "source_meeting": "2026-03-15-refi-coordination.md",
+      "notes": "Joint proposal with GreenDAO and Impact Network for Regen Foundation Q2 grant"
+    },
+    {
+      "id": "ai-4",
+      "task": "Set up quadratic voting test instance",
+      "owner": "person-carlos-ruiz",
+      "due_date": "2026-03-20",
+      "status": "pending",
+      "priority": "medium",
+      "source_meeting": "2026-03-15-refi-coordination.md"
+    },
+    {
+      "id": "ai-5",
+      "task": "Coordinate with Impact Network partnership lead",
+      "owner": "person-maria-garcia",
+      "due_date": "2026-03-18",
+      "status": "pending",
+      "priority": "high",
+      "source_meeting": "2026-03-15-refi-coordination.md"
+    }
+  ],
+  "decisions": [
+    {
+      "id": "dec-1",
+      "description": "Adopt distributed coordination pattern for all ReFi DAO Barcelona decisions",
+      "context": "Protocol Standard",
+      "approved_by": ["person-maria-garcia", "person-pedro-sanchez", "person-ana-lopez", "person-carlos-ruiz", "person-sofia-martinez"],
+      "source_meeting": "2026-03-15-refi-coordination.md"
+    },
+    {
+      "id": "dec-2",
+      "description": "Submit joint grant proposal with GreenDAO and Impact Network",
+      "context": "Grant Application",
+      "approved_by": ["person-maria-garcia", "person-pedro-sanchez", "person-ana-lopez", "person-carlos-ruiz", "person-sofia-martinez"],
+      "source_meeting": "2026-03-15-refi-coordination.md"
+    },
+    {
+      "id": "dec-3",
+      "description": "Prioritize Spanish and Catalan translations",
+      "context": "Language Support",
+      "approved_by": ["person-maria-garcia", "person-ana-lopez", "person-carlos-ruiz"],
+      "source_meeting": "2026-03-15-refi-coordination.md"
+    },
+    {
+      "id": "dec-4",
+      "description": "Move to bi-weekly meeting cadence due to increased async coordination",
+      "context": "Meeting Schedule",
+      "approved_by": ["person-maria-garcia", "person-pedro-sanchez", "person-ana-lopez", "person-carlos-ruiz", "person-sofia-martinez"],
+      "source_meeting": "2026-03-15-refi-coordination.md",
+      "effective_date": "2026-03-29"
+    }
+  ],
+  "summary": {
+    "total_entities": 15,
+    "by_type": {
+      "person": 5,
+      "organization": 5,
+      "pattern": 2,
+      "protocol": 1,
+      "concept": 2
+    },
+    "action_items": 5,
+    "decisions": 4,
+    "relationships": 6
+  }
+}

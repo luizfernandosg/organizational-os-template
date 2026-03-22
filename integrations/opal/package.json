@@ -1,0 +1,56 @@
+{
+  "name": "@org-os/opal-bridge",
+  "version": "1.0.0",
+  "description": "OPAL (Open Protocol Agent Librarian) bridge for Organizational OS — AI-powered knowledge gardens",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "NODE_OPTIONS='--experimental-vm-modules' jest",
+    "test:watch": "NODE_OPTIONS='--experimental-vm-modules' jest --watch",
+    "test:integration": "NODE_OPTIONS='--experimental-vm-modules' jest --config jest.integration.config.js",
+    "test:opal-integration": "NODE_OPTIONS='--experimental-vm-modules' jest --config jest.opal.config.js",
+    "test:setup": "bash scripts/test-setup.sh",
+    "validate": "bash scripts/validate-install.sh",
+    "lint": "eslint src/",
+    "example:basic": "tsx examples/basic-usage.ts",
+    "example:workflow": "tsx examples/meeting-workflow.ts"
+  },
+  "bin": {
+    "opal-bridge": "dist/cli.js"
+  },
+  "keywords": [
+    "opal",
+    "knowledge-garden",
+    "ai-librarian",
+    "entity-extraction",
+    "semantic-search",
+    "organizational-os",
+    "regen"
+  ],
+  "author": "Organizational OS",
+  "license": "MIT",
+  "dependencies": {
+    "commander": "^11.1.0",
+    "chalk": "^5.3.0",
+    "ora": "^8.0.1",
+    "yaml": "^2.3.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.0",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "tsx": "^4.7.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/luizfernandosg/org-os",
+    "directory": "packages/opal-bridge"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
