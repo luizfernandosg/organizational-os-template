@@ -6,8 +6,9 @@ date: YYYY-MM-DDTHH:MM:00Z
 participants:
   - member-id-1
   - member-id-2
-status: planned  # planned, completed, cancelled
-duration: PT1H  # ISO-8601 duration (optional)
+status: planned # planned, completed, cancelled
+duration: PT1H # ISO-8601 duration (optional)
+notion_url: "" # Notion page URL (optional, for /initialize dashboard links)
 ---
 
 # {{title}}

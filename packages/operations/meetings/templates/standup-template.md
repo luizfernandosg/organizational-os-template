@@ -8,6 +8,7 @@ participants:
   - member-id-2
 status: completed
 duration: PT15M
+notion_url: "" # Notion page URL (optional)
 ---
 
 # {{title}}
@@ -18,11 +19,13 @@ duration: PT15M
 ## Updates
 
 ### Member 1
+
 - **Yesterday**: What I did
 - **Today**: What I'm doing
 - **Blockers**: Any blockers
 
 ### Member 2
+
 - **Yesterday**: What I did
 - **Today**: What I'm doing
 - **Blockers**: Any blockers

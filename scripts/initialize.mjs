@@ -1,0 +1,1057 @@
+#!/usr/bin/env node
+
+/**
+ * org-os Initialize — Data Gatherer
+ *
+ * Reads all organizational state from local files + optional Notion API,
+ * outputs structured JSON for agent consumption or pre-rendered markdown.
+ *
+ * Usage:
+ *   node scripts/initialize.mjs                  # JSON output (for agent)
+ *   node scripts/initialize.mjs --format=markdown # Pre-rendered dashboard
+ *   node scripts/initialize.mjs --format=json     # Explicit JSON (default)
+ */
+
+import fs from "fs";
+import path from "path";
+import yaml from "js-yaml";
+import matter from "gray-matter";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const rootDir = path.resolve(__dirname, "..");
+
+const args = process.argv.slice(2);
+const formatArg = args.find((a) => a.startsWith("--format="));
+const format = formatArg ? formatArg.split("=")[1] : "json";
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function readFileSafe(filePath) {
+  try {
+    return fs.readFileSync(filePath, "utf-8");
+  } catch {
+    return null;
+  }
+}
+
+function readYamlSafe(filePath) {
+  const content = readFileSafe(filePath);
+  if (!content) return null;
+  try {
+    return yaml.load(content);
+  } catch {
+    return null;
+  }
+}
+
+function parseMarkdownFrontmatter(filePath) {
+  const content = readFileSafe(filePath);
+  if (!content) return null;
+  try {
+    return matter(content);
+  } catch {
+    return null;
+  }
+}
+
+function extractCheckboxes(markdownContent) {
+  const lines = markdownContent.split("\n");
+  const items = [];
+  let currentCategory = "";
+
+  for (const line of lines) {
+    const categoryMatch = line.match(/^#{2,3}\s+(.+)/);
+    if (categoryMatch) {
+      currentCategory = categoryMatch[1].trim();
+      continue;
+    }
+
+    const checkboxMatch = line.match(/^-\s+\[([ xX])\]\s+(.+)/);
+    if (checkboxMatch) {
+      const done = checkboxMatch[1] !== " ";
+      let text = checkboxMatch[2].trim();
+
+      // Extract due date if present
+      const dueMatch = text.match(/\(due:\s*(\d{4}-\d{2}-\d{2})\)/i);
+      const due = dueMatch ? dueMatch[1] : null;
+
+      // Extract assignee if present
+      const assigneeMatch = text.match(/@(\w+)/);
+      const assignee = assigneeMatch ? assigneeMatch[1] : null;
+
+      // Clean up text
+      text = text
+        .replace(/\(due:\s*\d{4}-\d{2}-\d{2}\)/i, "")
+        .replace(/@\w+/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
+      // Skip template placeholders
+      if (text.startsWith("_(") && text.endsWith(")_")) continue;
+
+      items.push({
+        text,
+        done,
+        category: currentCategory,
+        due,
+        assignee,
+      });
+    }
+  }
+
+  return items;
+}
+
+function getRelativeAge(dateStr) {
+  if (!dateStr) return null;
+  const date = new Date(dateStr);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return `${Math.floor(diffDays / 7)}w ago`;
+}
+
+function getFileModifiedAge(filePath) {
+  try {
+    const stat = fs.statSync(filePath);
+    return getRelativeAge(stat.mtime.toISOString());
+  } catch {
+    return null;
+  }
+}
+
+function daysUntil(dateStr) {
+  if (!dateStr) return Infinity;
+  const date = new Date(dateStr);
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  date.setHours(0, 0, 0, 0);
+  return Math.ceil((date - now) / 86400000);
+}
+
+// ── Identity ─────────────────────────────────────────────────────────────────
+
+function loadIdentity() {
+  const federation = readYamlSafe(path.join(rootDir, "federation.yaml"));
+  const identityMd = readFileSafe(path.join(rootDir, "IDENTITY.md"));
+  const soulMd = readFileSafe(path.join(rootDir, "SOUL.md"));
+
+  const id = federation?.identity || {};
+
+  // Extract mission from SOUL.md (first line after "## Mission" or similar)
+  let mission = "";
+  if (soulMd) {
+    const missionMatch = soulMd.match(/##\s*Mission[^\n]*\n+([^\n#]+)/i);
+    if (missionMatch) {
+      mission = missionMatch[1]
+        .trim()
+        .replace(/^[>_*]+\s*/, "")
+        .replace(/[_*]+$/, "");
+    }
+  }
+
+  // Extract notion workspace URL from TOOLS.md
+  const toolsMd = readFileSafe(path.join(rootDir, "TOOLS.md"));
+  let notionWorkspaceUrl = null;
+  if (toolsMd) {
+    const notionMatch = toolsMd.match(
+      /Workspace URL:\s*(https:\/\/notion\.so\/[^\s]+)/i,
+    );
+    if (
+      notionMatch &&
+      !notionMatch[1].includes("[") &&
+      !notionMatch[1].includes("]")
+    ) {
+      notionWorkspaceUrl = notionMatch[1];
+    }
+  }
+
+  return {
+    name: id.name || "Organizational OS",
+    type: id.type || "Organization",
+    emoji: id.emoji || "",
+    chain: id.chain || null,
+    daoURI: id.daoURI || null,
+    mission,
+    notionUrl: notionWorkspaceUrl,
+  };
+}
+
+// ── Status ───────────────────────────────────────────────────────────────────
+
+function loadStatus() {
+  const federation = readYamlSafe(path.join(rootDir, "federation.yaml"));
+  const memoryDir = path.join(rootDir, "memory");
+
+  // Find most recent memory file
+  let lastMemory = null;
+  let lastMemoryAge = null;
+  if (fs.existsSync(memoryDir)) {
+    const memoryFiles = fs
+      .readdirSync(memoryDir)
+      .filter((f) => f.match(/^\d{4}-\d{2}-\d{2}\.md$/))
+      .sort()
+      .reverse();
+    if (memoryFiles.length > 0) {
+      lastMemory = memoryFiles[0].replace(".md", "");
+      lastMemoryAge = getFileModifiedAge(path.join(memoryDir, memoryFiles[0]));
+    }
+  }
+
+  // Schema freshness
+  const schemaAge = getFileModifiedAge(
+    path.join(rootDir, ".well-known", "dao.json"),
+  );
+
+  // Peer count
+  const peers = federation?.peers || [];
+
+  // Runtime
+  const runtime = federation?.agent?.runtime || "none";
+
+  // Skills count
+  const skills = federation?.agent?.skills || [];
+
+  return {
+    lastMemory,
+    lastMemoryAge,
+    schemaAge,
+    peerCount: peers.length,
+    runtime,
+    skillCount: skills.length,
+    skills: skills,
+  };
+}
+
+// ── Projects ─────────────────────────────────────────────────────────────────
+
+function loadProjects() {
+  const projects = [];
+
+  // From data/projects.yaml
+  const projectsData = readYamlSafe(
+    path.join(rootDir, "data", "projects.yaml"),
+  );
+  if (projectsData?.projects) {
+    for (const p of projectsData.projects) {
+      projects.push({
+        name: p.name || p.id,
+        stage: p.status || "Integrate",
+        lead: p.lead || null,
+        members: p.members || [],
+        startDate: p.startDate || null,
+        notionUrl: p.notion_url || null,
+        taskCount: 0,
+      });
+    }
+  }
+
+  // From content/projects/*.md
+  const projectsDir = path.join(rootDir, "content", "projects");
+  if (fs.existsSync(projectsDir)) {
+    const files = fs.readdirSync(projectsDir).filter((f) => f.endsWith(".md"));
+    for (const file of files) {
+      const parsed = parseMarkdownFrontmatter(path.join(projectsDir, file));
+      if (!parsed) continue;
+      const { data, content } = parsed;
+
+      // Count tasks in the file
+      const taskMatches = content.match(/- \[ \]/g);
+      const taskCount = taskMatches ? taskMatches.length : 0;
+
+      // Check if already added from YAML (deduplicate by name)
+      const existing = projects.find(
+        (p) => p.name === (data.name || file.replace(".md", "")),
+      );
+      if (existing) {
+        existing.taskCount = taskCount;
+        if (data.notion_url) existing.notionUrl = data.notion_url;
+        continue;
+      }
+
+      projects.push({
+        name: data.name || file.replace(".md", ""),
+        stage: data.status || "Integrate",
+        lead: data.lead || null,
+        members: data.members || [],
+        startDate: data.startDate || null,
+        notionUrl: data.notion_url || null,
+        taskCount,
+      });
+    }
+  }
+
+  return projects;
+}
+
+// ── Tasks (from HEARTBEAT.md) ────────────────────────────────────────────────
+
+function loadTasks() {
+  const heartbeat = readFileSafe(path.join(rootDir, "HEARTBEAT.md"));
+  if (!heartbeat)
+    return { critical: [], urgent: [], upcoming: [], completed: [] };
+
+  const items = extractCheckboxes(heartbeat);
+  const now = new Date();
+
+  const critical = [];
+  const urgent = [];
+  const upcoming = [];
+  const completed = [];
+
+  for (const item of items) {
+    if (item.done) {
+      completed.push(item);
+      continue;
+    }
+
+    if (item.due) {
+      const days = daysUntil(item.due);
+      if (days <= 0) {
+        critical.push({ ...item, daysLeft: days });
+      } else if (days <= 7) {
+        urgent.push({ ...item, daysLeft: days });
+      } else {
+        upcoming.push({ ...item, daysLeft: days });
+      }
+    } else {
+      // No due date — categorize by category keyword
+      const cat = item.category.toLowerCase();
+      if (cat.includes("fund") || cat.includes("governance")) {
+        urgent.push({ ...item, daysLeft: null });
+      } else {
+        upcoming.push({ ...item, daysLeft: null });
+      }
+    }
+  }
+
+  return { critical, urgent, upcoming, completed };
+}
+
+// ── Meetings (this week) ─────────────────────────────────────────────────────
+
+function loadMeetings() {
+  const meetingsDir = path.join(rootDir, "content", "meetings");
+  const meetings = [];
+
+  if (!fs.existsSync(meetingsDir)) return { thisWeek: [], upcoming: [] };
+
+  const files = fs.readdirSync(meetingsDir).filter((f) => f.endsWith(".md"));
+  for (const file of files) {
+    const parsed = parseMarkdownFrontmatter(path.join(meetingsDir, file));
+    if (!parsed) continue;
+    const { data } = parsed;
+
+    if (!data.date) continue;
+
+    meetings.push({
+      title: data.title || file.replace(".md", ""),
+      date: data.date,
+      type: data.type || "meeting",
+      status: data.status || "planned",
+      participants: data.participants || [],
+      notionUrl: data.notion_url || null,
+    });
+  }
+
+  // Sort by date
+  meetings.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  // Split into this week and upcoming
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - now.getDay() + 1); // Monday
+  weekStart.setHours(0, 0, 0, 0);
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 7);
+
+  const thisWeek = meetings.filter((m) => {
+    const d = new Date(m.date);
+    return d >= weekStart && d < weekEnd;
+  });
+
+  const upcoming = meetings
+    .filter((m) => {
+      const d = new Date(m.date);
+      return d >= weekEnd;
+    })
+    .slice(0, 5);
+
+  return { thisWeek, upcoming };
+}
+
+// ── Members ──────────────────────────────────────────────────────────────────
+
+function loadMembers() {
+  const membersData = readYamlSafe(path.join(rootDir, "data", "members.yaml"));
+  return (membersData?.members || []).map((m) => ({
+    name: m.name || m.id,
+    role: m.role || "member",
+    joined: m.joined || null,
+  }));
+}
+
+// ── Funding ──────────────────────────────────────────────────────────────────
+
+function loadFunding() {
+  const fundingData = readYamlSafe(
+    path.join(rootDir, "data", "funding-opportunities.yaml"),
+  );
+  const opportunities = fundingData?.opportunities || [];
+
+  const upcoming = [];
+  const active = [];
+
+  for (const opp of opportunities) {
+    if (!opp.deadline) {
+      if (opp.status === "active" || opp.status === "applied") {
+        active.push(opp);
+      }
+      continue;
+    }
+
+    const days = daysUntil(opp.deadline);
+    if (days < 0) continue; // expired
+    if (opp.status === "applied") {
+      active.push(opp);
+    } else {
+      upcoming.push({ ...opp, daysLeft: days });
+    }
+  }
+
+  upcoming.sort((a, b) => a.daysLeft - b.daysLeft);
+
+  return { upcoming, active };
+}
+
+// ── Recent Memory ────────────────────────────────────────────────────────────
+
+function loadRecentMemory() {
+  const memoryDir = path.join(rootDir, "memory");
+  if (!fs.existsSync(memoryDir)) return [];
+
+  const files = fs
+    .readdirSync(memoryDir)
+    .filter((f) => f.match(/^\d{4}-\d{2}-\d{2}\.md$/))
+    .sort()
+    .reverse()
+    .slice(0, 3);
+
+  const entries = [];
+  for (const file of files) {
+    const content = readFileSafe(path.join(memoryDir, file));
+    if (!content) continue;
+
+    // Extract first meaningful lines (skip headers and empty lines)
+    const lines = content
+      .split("\n")
+      .filter((l) => l.trim() && !l.startsWith("#") && !l.startsWith("---"))
+      .slice(0, 2)
+      .join(" ")
+      .trim();
+
+    if (lines) {
+      entries.push({
+        date: file.replace(".md", ""),
+        summary: lines.substring(0, 200),
+      });
+    }
+  }
+
+  return entries;
+}
+
+// ── Federation ───────────────────────────────────────────────────────────────
+
+function loadFederation() {
+  const federation = readYamlSafe(path.join(rootDir, "federation.yaml"));
+  if (!federation) return null;
+
+  const peers = (federation.peers || []).map((p) => ({
+    name: p.name,
+    url: p.url || null,
+  }));
+
+  const upstream = (federation.upstream || []).map((u) => ({
+    repository: u.repository,
+    lastSync: u.last_sync || null,
+    syncFrequency: u.sync_frequency || null,
+  }));
+
+  return {
+    network: federation.network || null,
+    peers,
+    upstream,
+    packages: federation.packages || {},
+    egregoreEnabled: federation.packages?.egregore || false,
+    knowledgeCommons: federation["knowledge-commons"]?.enabled || false,
+  };
+}
+
+// ── Key Docs ─────────────────────────────────────────────────────────────────
+
+function loadKeyDocs() {
+  const docs = [];
+  const keyFiles = [
+    { path: "HEARTBEAT.md", label: "Active tasks & system health" },
+    { path: "MEMORY.md", label: "Key decisions & context index" },
+    { path: "SOUL.md", label: "Values, mission & voice" },
+    { path: "IDENTITY.md", label: "Organization identity & addresses" },
+    { path: "USER.md", label: "Operator profile & preferences" },
+    { path: "federation.yaml", label: "Network config & integrations" },
+    { path: "TOOLS.md", label: "Infrastructure & API endpoints" },
+    { path: "data/projects.yaml", label: "Project registry" },
+    { path: "data/members.yaml", label: "Member registry" },
+    { path: "data/funding-opportunities.yaml", label: "Funding tracker" },
+  ];
+
+  for (const doc of keyFiles) {
+    const fullPath = path.join(rootDir, doc.path);
+    if (fs.existsSync(fullPath)) {
+      docs.push({
+        path: doc.path,
+        label: doc.label,
+        lastModified: getFileModifiedAge(fullPath),
+      });
+    }
+  }
+
+  return docs;
+}
+
+// ── Skills ───────────────────────────────────────────────────────────────────
+
+function loadSkills() {
+  const skillsDir = path.join(rootDir, "skills");
+  if (!fs.existsSync(skillsDir)) return [];
+
+  const skills = [];
+  const entries = fs.readdirSync(skillsDir, { withFileTypes: true });
+
+  for (const entry of entries) {
+    if (!entry.isDirectory()) continue;
+    const skillMd = path.join(skillsDir, entry.name, "SKILL.md");
+    if (!fs.existsSync(skillMd)) continue;
+
+    const parsed = parseMarkdownFrontmatter(skillMd);
+    if (!parsed) continue;
+
+    skills.push({
+      name: parsed.data.name || entry.name,
+      description: parsed.data.description || "",
+    });
+  }
+
+  return skills;
+}
+
+// ── Notion Client (optional) ─────────────────────────────────────────────────
+
+async function fetchNotionData() {
+  const apiKey = process.env.NOTION_API_KEY;
+  if (!apiKey) return null;
+
+  // Parse Notion database IDs from TOOLS.md
+  const toolsMd = readFileSafe(path.join(rootDir, "TOOLS.md"));
+  if (!toolsMd) return null;
+
+  const dbIds = {};
+  const projectsMatch = toolsMd.match(/Projects:\s*([a-f0-9-]{32,36})/i);
+  const tasksMatch = toolsMd.match(/Tasks:\s*([a-f0-9-]{32,36})/i);
+  const meetingsMatch = toolsMd.match(/Meetings:\s*([a-f0-9-]{32,36})/i);
+  const membersMatch = toolsMd.match(/Members:\s*([a-f0-9-]{32,36})/i);
+
+  if (projectsMatch) dbIds.projects = projectsMatch[1];
+  if (tasksMatch) dbIds.tasks = tasksMatch[1];
+  if (meetingsMatch) dbIds.meetings = meetingsMatch[1];
+  if (membersMatch) dbIds.members = membersMatch[1];
+
+  if (Object.keys(dbIds).length === 0) return null;
+
+  try {
+    // Dynamic import — @notionhq/client is optional
+    const { Client } = await import("@notionhq/client");
+    const notion = new Client({ auth: apiKey });
+
+    const result = { projects: [], tasks: [], meetings: [], members: [] };
+
+    // Fetch projects
+    if (dbIds.projects) {
+      try {
+        const response = await notion.databases.query({
+          database_id: dbIds.projects,
+          page_size: 50,
+        });
+        result.projects = response.results.map((page) => ({
+          name: extractNotionTitle(page),
+          notionUrl: page.url,
+          stage:
+            extractNotionSelect(page, "Status") ||
+            extractNotionSelect(page, "Stage") ||
+            "Integrate",
+          lead:
+            extractNotionPerson(page, "Lead") ||
+            extractNotionPerson(page, "Owner"),
+        }));
+      } catch (e) {
+        // Silently skip if DB not accessible
+      }
+    }
+
+    // Fetch meetings
+    if (dbIds.meetings) {
+      try {
+        const now = new Date();
+        const weekStart = new Date(now);
+        weekStart.setDate(now.getDate() - now.getDay() + 1);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 14);
+
+        const response = await notion.databases.query({
+          database_id: dbIds.meetings,
+          filter: {
+            property: "Date",
+            date: {
+              on_or_after: weekStart.toISOString().split("T")[0],
+            },
+          },
+          sorts: [{ property: "Date", direction: "ascending" }],
+          page_size: 20,
+        });
+        result.meetings = response.results.map((page) => ({
+          title: extractNotionTitle(page),
+          date: extractNotionDate(page, "Date"),
+          notionUrl: page.url,
+          type: extractNotionSelect(page, "Type") || "meeting",
+        }));
+      } catch (e) {
+        // Silently skip
+      }
+    }
+
+    return result;
+  } catch {
+    // @notionhq/client not installed — that's fine
+    return null;
+  }
+}
+
+function extractNotionTitle(page) {
+  const props = page.properties || {};
+  for (const [, prop] of Object.entries(props)) {
+    if (prop.type === "title" && prop.title?.length > 0) {
+      return prop.title.map((t) => t.plain_text).join("");
+    }
+  }
+  return "Untitled";
+}
+
+function extractNotionSelect(page, propName) {
+  const prop = page.properties?.[propName];
+  if (!prop) return null;
+  if (prop.type === "select") return prop.select?.name || null;
+  if (prop.type === "status") return prop.status?.name || null;
+  return null;
+}
+
+function extractNotionPerson(page, propName) {
+  const prop = page.properties?.[propName];
+  if (!prop || prop.type !== "people") return null;
+  return prop.people?.[0]?.name || null;
+}
+
+function extractNotionDate(page, propName) {
+  const prop = page.properties?.[propName];
+  if (!prop || prop.type !== "date") return null;
+  return prop.date?.start || null;
+}
+
+// ── Merge Notion + Local ─────────────────────────────────────────────────────
+
+function mergeData(local, notion) {
+  if (!notion) return local;
+
+  // Merge projects: Notion takes precedence, local fills gaps
+  if (notion.projects?.length > 0) {
+    const merged = [...notion.projects];
+    for (const localProj of local.projects) {
+      const exists = merged.find(
+        (p) => p.name.toLowerCase() === localProj.name.toLowerCase(),
+      );
+      if (!exists) {
+        merged.push(localProj);
+      } else {
+        // Enrich Notion data with local data
+        if (!exists.lead && localProj.lead) exists.lead = localProj.lead;
+        if (localProj.taskCount) exists.taskCount = localProj.taskCount;
+      }
+    }
+    local.projects = merged;
+  }
+
+  // Merge meetings
+  if (notion.meetings?.length > 0) {
+    const merged = [...notion.meetings];
+    for (const localMeeting of local.meetings.thisWeek) {
+      const exists = merged.find(
+        (m) => m.title.toLowerCase() === localMeeting.title.toLowerCase(),
+      );
+      if (!exists) merged.push(localMeeting);
+    }
+    // Rebuild thisWeek/upcoming from merged
+    const now = new Date();
+    const weekStart = new Date(now);
+    weekStart.setDate(now.getDate() - now.getDay() + 1);
+    weekStart.setHours(0, 0, 0, 0);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 7);
+
+    local.meetings.thisWeek = merged.filter((m) => {
+      const d = new Date(m.date);
+      return d >= weekStart && d < weekEnd;
+    });
+    local.meetings.upcoming = merged
+      .filter((m) => {
+        const d = new Date(m.date);
+        return d >= weekEnd;
+      })
+      .slice(0, 5);
+  }
+
+  return local;
+}
+
+// ── Main ─────────────────────────────────────────────────────────────────────
+
+async function main() {
+  const identity = loadIdentity();
+  const status = loadStatus();
+  const projects = loadProjects();
+  const tasks = loadTasks();
+  const meetings = loadMeetings();
+  const members = loadMembers();
+  const funding = loadFunding();
+  const recentMemory = loadRecentMemory();
+  const federation = loadFederation();
+  const docs = loadKeyDocs();
+  const skills = loadSkills();
+
+  let state = {
+    generated: new Date().toISOString(),
+    identity,
+    status,
+    projects,
+    tasks,
+    meetings,
+    members,
+    funding,
+    recentMemory,
+    federation,
+    docs,
+    skills,
+  };
+
+  // Try Notion enrichment
+  const notionData = await fetchNotionData();
+  if (notionData) {
+    state = mergeData(state, notionData);
+    state.status.notionConnected = true;
+  } else {
+    state.status.notionConnected = false;
+  }
+
+  if (format === "markdown") {
+    console.log(renderMarkdown(state));
+  } else {
+    console.log(JSON.stringify(state, null, 2));
+  }
+}
+
+// ── Markdown Renderer (standalone fallback) ──────────────────────────────────
+
+function renderMarkdown(state) {
+  const {
+    identity,
+    status,
+    projects,
+    tasks,
+    meetings,
+    members,
+    funding,
+    recentMemory,
+    federation,
+    docs,
+    skills,
+  } = state;
+
+  const today = new Date();
+  const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  let out = "";
+
+  // ── Banner
+  const orgName = identity.name || "Org OS";
+  const notionLink = identity.notionUrl
+    ? ` [Notion](${identity.notionUrl})`
+    : "";
+  out += `\`\`\`\n`;
+  out += generateAsciiBanner(orgName);
+  out += `\`\`\`\n\n`;
+  if (identity.emoji || notionLink) {
+    out += `${identity.emoji ? identity.emoji + "  " : ""}**${identity.type}**`;
+    if (identity.chain) out += ` · ${identity.chain}`;
+    if (notionLink) out += ` ·${notionLink}`;
+    out += `\n\n`;
+  }
+
+  // ── Status bar
+  const statusParts = [];
+  if (status.lastMemoryAge) statusParts.push(`Memory: ${status.lastMemoryAge}`);
+  else statusParts.push("Memory: no entries yet");
+  statusParts.push(`Peers: ${status.peerCount}`);
+  statusParts.push(`Runtime: ${status.runtime}`);
+  if (status.schemaAge) statusParts.push(`Schemas: ${status.schemaAge}`);
+  if (status.notionConnected) statusParts.push("Notion: connected");
+  out += `> ${statusParts.join(" · ")}\n\n`;
+
+  // ── Projects
+  out += `### Active Projects\n\n`;
+  if (projects.length === 0) {
+    out += `_No projects yet. Add to \`data/projects.yaml\` or run \`npm run setup\`._\n\n`;
+  } else {
+    out += `| Project | Stage | Lead | Link |\n`;
+    out += `|---------|-------|------|------|\n`;
+    for (const p of projects) {
+      const stage = `\`[${p.stage[0]}]\` ${p.stage}`;
+      const lead = p.lead || "—";
+      const link = p.notionUrl ? `[open](${p.notionUrl})` : "—";
+      out += `| ${p.name} | ${stage} | ${lead} | ${link} |\n`;
+    }
+    out += `\n`;
+  }
+
+  // ── Tasks
+  out += `### Tasks\n\n`;
+  const allPending = [...tasks.critical, ...tasks.urgent, ...tasks.upcoming];
+  if (allPending.length === 0 && tasks.completed.length === 0) {
+    out += `_No tasks in HEARTBEAT.md yet._\n\n`;
+  } else {
+    for (const t of tasks.critical) {
+      const due = t.due ? ` (${t.due})` : "";
+      out += `- [ ] **${t.text}**${due} — \`CRITICAL\`\n`;
+    }
+    for (const t of tasks.urgent) {
+      const due = t.daysLeft != null ? ` (${t.daysLeft}d left)` : "";
+      out += `- [ ] ${t.text}${due} — \`URGENT\`\n`;
+    }
+    for (const t of tasks.upcoming) {
+      out += `- [ ] ${t.text}\n`;
+    }
+    for (const t of tasks.completed.slice(0, 3)) {
+      out += `- [x] ~~${t.text}~~\n`;
+    }
+    out += `\n`;
+    out += `> ${allPending.length} pending · ${tasks.critical.length} critical · ${tasks.completed.length} done\n\n`;
+  }
+
+  // ── This Week
+  out += `### This Week\n\n`;
+  if (meetings.thisWeek.length === 0) {
+    out += `_No meetings scheduled this week._\n\n`;
+  } else {
+    // Build week grid
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay() + 1);
+
+    for (let i = 0; i < 7; i++) {
+      const day = new Date(weekStart);
+      day.setDate(weekStart.getDate() + i);
+      const dayStr = dayNames[day.getDay()];
+      const dateNum = day.getDate();
+      const isToday = day.toDateString() === today.toDateString();
+      const marker = isToday ? " **<-**" : "";
+
+      const dayMeetings = meetings.thisWeek.filter((m) => {
+        const md = new Date(m.date);
+        return md.toDateString() === day.toDateString();
+      });
+
+      if (dayMeetings.length > 0) {
+        for (const m of dayMeetings) {
+          const time = new Date(m.date).toLocaleTimeString("en", {
+            hour: "2-digit",
+            minute: "2-digit",
+            hour12: false,
+          });
+          const link = m.notionUrl ? ` [link](${m.notionUrl})` : "";
+          out += `- **${dayStr} ${dateNum}** — ${m.title} ${time}${link}${marker}\n`;
+        }
+      } else if (isToday) {
+        out += `- **${dayStr} ${dateNum}** — _(today)_\n`;
+      }
+    }
+    out += `\n`;
+  }
+
+  // ── Funding
+  if (funding.upcoming.length > 0) {
+    out += `### Funding Deadlines\n\n`;
+    for (const f of funding.upcoming.slice(0, 5)) {
+      const urgency = f.daysLeft <= 7 ? " **URGENT**" : "";
+      const url = f.url ? ` [apply](${f.url})` : "";
+      out += `- ${f.fund || f.platform} — ${f.daysLeft}d left${urgency}${url}\n`;
+    }
+    out += `\n`;
+  }
+
+  // ── Recent Context
+  if (recentMemory.length > 0) {
+    out += `### Recent Context\n\n`;
+    for (const entry of recentMemory) {
+      out += `- **${entry.date}**: ${entry.summary}\n`;
+    }
+    out += `\n`;
+  }
+
+  // ── Cheatsheet
+  out += `### Cheatsheet\n\n`;
+  out += `| Command | Purpose |\n`;
+  out += `|---------|---------|\n`;
+  out += `| \`npm run setup\` | Interactive org configuration |\n`;
+  out += `| \`npm run sync\` | Git sync (status/push/pull) |\n`;
+  out += `| \`npm run initialize\` | This dashboard |\n`;
+  out += `| \`npm run generate:schemas\` | Regenerate EIP-4824 schemas |\n`;
+  out += `| \`/reflect\` | Save insight (egregore) |\n`;
+  out += `| \`/handoff\` | Leave notes for team |\n`;
+  out += `\n`;
+
+  out += `**Agent tips:** `;
+  const tips = [];
+  if (tasks.critical.length > 0)
+    tips.push(`"Help me with ${tasks.critical[0].text}"`);
+  if (meetings.thisWeek.length > 0)
+    tips.push(`"Prepare for ${meetings.thisWeek[0].title}"`);
+  if (funding.upcoming.length > 0)
+    tips.push(`"Review ${funding.upcoming[0].fund || "funding"} deadline"`);
+  if (tips.length === 0)
+    tips.push(
+      '"Review HEARTBEAT tasks"',
+      '"Process latest meeting notes"',
+      '"What funding deadlines are coming?"',
+    );
+  out += tips.join(" · ") + "\n\n";
+
+  // ── Federation
+  if (federation) {
+    out += `### Federation\n\n`;
+    const parts = [];
+    if (federation.upstream?.length > 0)
+      parts.push(`Upstream: ${federation.upstream[0].repository}`);
+    if (federation.peers.length > 0)
+      parts.push(`Peers: ${federation.peers.map((p) => p.name).join(", ")}`);
+    parts.push(`Skills: ${status.skillCount} active`);
+    if (federation.knowledgeCommons) parts.push("Knowledge Commons: enabled");
+    if (federation.egregoreEnabled) parts.push("Egregore: enabled");
+    out += `> ${parts.join(" · ")}\n\n`;
+  }
+
+  out += `---\n\n`;
+  out += `**What would you like to work on?**\n`;
+
+  return out;
+}
+
+// ── ASCII Banner Generator ───────────────────────────────────────────────────
+
+function generateAsciiBanner(name) {
+  // Simple block-letter ASCII art generator
+  // Uses a compact 5-high font for each character
+  const font = {
+    A: ["  █  ", " █ █ ", "█████", "█   █", "█   █"],
+    B: ["████ ", "█   █", "████ ", "█   █", "████ "],
+    C: [" ████", "█    ", "█    ", "█    ", " ████"],
+    D: ["████ ", "█   █", "█   █", "█   █", "████ "],
+    E: ["█████", "█    ", "████ ", "█    ", "█████"],
+    F: ["█████", "█    ", "████ ", "█    ", "█    "],
+    G: [" ████", "█    ", "█  ██", "█   █", " ████"],
+    H: ["█   █", "█   █", "█████", "█   █", "█   █"],
+    I: ["█████", "  █  ", "  █  ", "  █  ", "█████"],
+    J: ["█████", "    █", "    █", "█   █", " ███ "],
+    K: ["█   █", "█  █ ", "███  ", "█  █ ", "█   █"],
+    L: ["█    ", "█    ", "█    ", "█    ", "█████"],
+    M: ["█   █", "██ ██", "█ █ █", "█   █", "█   █"],
+    N: ["█   █", "██  █", "█ █ █", "█  ██", "█   █"],
+    O: [" ███ ", "█   █", "█   █", "█   █", " ███ "],
+    P: ["████ ", "█   █", "████ ", "█    ", "█    "],
+    Q: [" ███ ", "█   █", "█ █ █", "█  █ ", " ██ █"],
+    R: ["████ ", "█   █", "████ ", "█  █ ", "█   █"],
+    S: [" ████", "█    ", " ███ ", "    █", "████ "],
+    T: ["█████", "  █  ", "  █  ", "  █  ", "  █  "],
+    U: ["█   █", "█   █", "█   █", "█   █", " ███ "],
+    V: ["█   █", "█   █", "█   █", " █ █ ", "  █  "],
+    W: ["█   █", "█   █", "█ █ █", "██ ██", "█   █"],
+    X: ["█   █", " █ █ ", "  █  ", " █ █ ", "█   █"],
+    Y: ["█   █", " █ █ ", "  █  ", "  █  ", "  █  "],
+    Z: ["█████", "   █ ", "  █  ", " █   ", "█████"],
+    0: [" ███ ", "█  ██", "█ █ █", "██  █", " ███ "],
+    1: ["  █  ", " ██  ", "  █  ", "  █  ", "█████"],
+    2: [" ███ ", "█   █", "  ██ ", " █   ", "█████"],
+    3: ["████ ", "    █", " ███ ", "    █", "████ "],
+    4: ["█   █", "█   █", "█████", "    █", "    █"],
+    5: ["█████", "█    ", "████ ", "    █", "████ "],
+    6: [" ████", "█    ", "████ ", "█   █", " ███ "],
+    7: ["█████", "    █", "   █ ", "  █  ", "  █  "],
+    8: [" ███ ", "█   █", " ███ ", "█   █", " ███ "],
+    9: [" ███ ", "█   █", " ████", "    █", "████ "],
+    " ": ["     ", "     ", "     ", "     ", "     "],
+    "-": ["     ", "     ", "█████", "     ", "     "],
+    ".": ["     ", "     ", "     ", "     ", "  █  "],
+    "+": ["     ", "  █  ", "█████", "  █  ", "     "],
+    "/": ["    █", "   █ ", "  █  ", " █   ", "█    "],
+  };
+
+  // For long names, generate an acronym from the words
+  let displayName;
+  if (name.length <= 14) {
+    displayName = name;
+  } else {
+    // Try acronym from capital letters or word initials
+    const words = name.split(/[\s-]+/).filter((w) => w.length > 0);
+    if (words.length >= 2) {
+      displayName = words
+        .map((w) => w[0])
+        .join("")
+        .toUpperCase();
+      // If acronym is too short, use first two words
+      if (displayName.length < 2) {
+        displayName = words.slice(0, 2).join(" ");
+      }
+    } else {
+      displayName = name.substring(0, 12).trim();
+    }
+  }
+  const fullText = displayName.toUpperCase() + " OS";
+
+  const lines = ["", "", "", "", ""];
+  for (const char of fullText) {
+    const glyph = font[char] || font[" "];
+    for (let row = 0; row < 5; row++) {
+      lines[row] += glyph[row] + " ";
+    }
+  }
+
+  return lines.join("\n") + "\n";
+}
+
+main().catch((err) => {
+  console.error("Error during initialization:", err.message);
+  process.exit(1);
+});

@@ -8,6 +8,7 @@ participants:
   - member-id-2
 status: completed
 duration: PT1H
+notion_url: "" # Notion page URL (optional)
 ---
 
 # {{title}}

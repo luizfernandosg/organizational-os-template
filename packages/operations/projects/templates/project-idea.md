@@ -2,7 +2,7 @@
 id: project-id
 type: project
 name: "Project Name"
-status: Integrate  # Integrate, Develop, Execute, Archive
+status: Integrate # Integrate, Develop, Execute, Archive
 lead: member-id
 members:
   - member-id-1
@@ -11,6 +11,7 @@ startDate: YYYY-MM-DD
 budget:
   allocated: 0
   currency: USD
+notion_url: "" # Notion page URL (optional, for /initialize dashboard links)
 ---
 
 # {{name}}
