@@ -17,6 +17,7 @@ import path from "path";
 import yaml from "js-yaml";
 import matter from "gray-matter";
 import { fileURLToPath } from "url";
+import { execSync } from "child_process";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -527,6 +528,166 @@ function loadKeyDocs() {
   return docs;
 }
 
+// ── Apps & Workspaces ────────────────────────────────────────────────────────
+
+function loadApps() {
+  const federation = readYamlSafe(path.join(rootDir, "federation.yaml"));
+  const packages = federation?.packages || {};
+  const apps = [];
+
+  // Paperclip agent dashboard
+  const paperclipPkg = path.join(
+    rootDir,
+    "packages",
+    "paperclip-agents-app",
+    "package.json",
+  );
+  if (fs.existsSync(paperclipPkg)) {
+    apps.push({
+      id: "paperclip",
+      name: "Paperclip",
+      description: "Agent dashboard — tasks, coordination, monitoring",
+      command: "npm run paperclip",
+      url: "http://localhost:3100",
+      status: "available",
+      icon: "📋",
+    });
+  }
+
+  // Egregore shared memory
+  const egregorePath = path.join(rootDir, "packages", "egregore-core");
+  if (fs.existsSync(egregorePath) || packages.egregore) {
+    apps.push({
+      id: "egregore",
+      name: "Egregore",
+      description: "Shared AI memory — /reflect, /handoff, /quest",
+      command: "/reflect, /handoff, /quest",
+      url: null,
+      status: packages.egregore ? "enabled" : "available",
+      icon: "🧠",
+    });
+  }
+
+  // Agents app
+  const agentsAppPkg = path.join(
+    rootDir,
+    "packages",
+    "agents-app",
+    "package.json",
+  );
+  if (fs.existsSync(agentsAppPkg)) {
+    apps.push({
+      id: "agents-app",
+      name: "Agents App",
+      description: "Agent orchestration and visualization",
+      command: "cd packages/agents-app && pnpm dev",
+      url: "http://localhost:3100",
+      status: "available",
+      icon: "🤖",
+    });
+  }
+
+  // KOI bridge
+  const koiBridge = path.join(rootDir, "packages", "koi-opal-bridge");
+  if (fs.existsSync(koiBridge)) {
+    apps.push({
+      id: "koi-bridge",
+      name: "KOI Bridge",
+      description: "Knowledge network sync — OPAL + KOI federation",
+      command: "cd packages/koi-opal-bridge && npm start",
+      url: null,
+      status: "available",
+      icon: "🐟",
+    });
+  }
+
+  // Task Manager webapp
+  const taskManager = path.join(
+    rootDir,
+    "packages",
+    "webapps",
+    "task-manager",
+    "index.html",
+  );
+  if (fs.existsSync(taskManager)) {
+    apps.push({
+      id: "task-manager",
+      name: "Task Manager",
+      description: "Visual task board from HEARTBEAT.md",
+      command: "open packages/webapps/task-manager/index.html",
+      url: null,
+      status: "available",
+      icon: "✅",
+    });
+  }
+
+  // Built-in skills as invokable agents
+  const builtinAgents = [
+    {
+      id: "research",
+      name: "Research",
+      description:
+        "Deep research — competitive intelligence, ecosystem scanning",
+      command: '@explore "Research [topic]"',
+      icon: "🔍",
+    },
+    {
+      id: "meeting-processor",
+      name: "Meeting Processor",
+      description: "Process transcripts into structured meeting notes",
+      command: '"Process the meeting notes from [date/title]"',
+      icon: "📝",
+    },
+    {
+      id: "funding-scout",
+      name: "Funding Scout",
+      description: "Scan funding opportunities, track deadlines",
+      command: '"Scan for new funding opportunities"',
+      icon: "💰",
+    },
+    {
+      id: "schema-generator",
+      name: "Schema Generator",
+      description: "Regenerate EIP-4824 JSON-LD schemas",
+      command: "npm run generate:schemas",
+      icon: "⚙️",
+    },
+  ];
+
+  for (const agent of builtinAgents) {
+    apps.push({ ...agent, url: null, status: "available" });
+  }
+
+  return apps;
+}
+
+// ── Git Status ───────────────────────────────────────────────────────────────
+
+function loadGitStatus() {
+  try {
+    const branch = execSync("git rev-parse --abbrev-ref HEAD 2>/dev/null", {
+      cwd: rootDir,
+      encoding: "utf-8",
+    }).trim();
+    const dirty =
+      execSync("git status --porcelain 2>/dev/null", {
+        cwd: rootDir,
+        encoding: "utf-8",
+      }).trim().length > 0;
+    const lastCommit = execSync('git log -1 --format="%s" 2>/dev/null', {
+      cwd: rootDir,
+      encoding: "utf-8",
+    }).trim();
+    const lastCommitAge = execSync('git log -1 --format="%ar" 2>/dev/null', {
+      cwd: rootDir,
+      encoding: "utf-8",
+    }).trim();
+    return { branch, dirty, lastCommit, lastCommitAge };
+  } catch {
+    return null;
+  }
+}
+
 // ── Skills ───────────────────────────────────────────────────────────────────
 
 function loadSkills() {
@@ -743,6 +904,8 @@ async function main() {
   const federation = loadFederation();
   const docs = loadKeyDocs();
   const skills = loadSkills();
+  const apps = loadApps();
+  const git = loadGitStatus();
 
   let state = {
     generated: new Date().toISOString(),
@@ -757,6 +920,8 @@ async function main() {
     federation,
     docs,
     skills,
+    apps,
+    git,
   };
 
   // Try Notion enrichment
