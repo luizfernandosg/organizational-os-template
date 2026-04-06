@@ -29,6 +29,7 @@ Every org-os instance follows this canonical directory structure. The framework 
 | `CLAUDE.md` | Claude Code quickstart — points to MASTERPLAN.md, lists key commands |
 | `README.md` | Human-facing repo overview with Getting Started for non-tech users |
 | `federation.yaml` | Federation manifest v3.0: identity, peers, agent config, knowledge commons |
+| `dashboard.yaml` | Dashboard configuration — toggle sections, reorder, customize per-section options |
 | `package.json` | npm scripts for all operational commands |
 
 ### Optional Root Files

@@ -43,6 +43,18 @@ If the pull or push fails (offline, no remote), continue silently with local sta
 
 When `/initialize` is triggered, the workspace is synced first, then you receive a JSON payload from `node scripts/initialize.mjs`. Parse it and render the dashboard below.
 
+### Dashboard Configuration
+
+Read `dashboard.yaml` at the project root to determine which sections to render, in what order, and with what options. Each section has a `show: true/false` toggle and section-specific options (max items, time horizons, styles).
+
+- **Only render sections with `show: true`** (default if omitted)
+- **Render in the order listed in `dashboard.yaml`**
+- **Respect per-section options** (max counts, horizon days, styles, etc.)
+- If `dashboard.yaml` doesn't exist, render all sections with defaults
+- If `custom_sections` are defined, read their `source` file and render accordingly
+
+See the `dashboard.yaml` file itself for the full option reference.
+
 ### Visual Language
 
 Use Unicode box-drawing characters and block elements. These render in all modern terminals and agent tools.

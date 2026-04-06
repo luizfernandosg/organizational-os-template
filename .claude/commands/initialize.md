@@ -22,30 +22,38 @@ node scripts/initialize.mjs
 
 If the script fails (missing dependencies, node not found), try `npm install` first, then retry. If it still fails, read the key files manually: `IDENTITY.md`, `HEARTBEAT.md`, `federation.yaml`, `data/projects.yaml`, `data/members.yaml`, `data/finances.yaml`, `data/meetings.yaml`, `data/events.yaml`, `data/funding-opportunities.yaml`, `data/ideas.yaml`, and recent files in `memory/`.
 
-## Step 3: Read the Skill
+## Step 3: Read Configuration
 
-Read `skills/org-os-init/SKILL.md` for the full visual language and dashboard layout specification.
+Read these files:
 
-## Step 4: Read the Plan Queue
+1. `skills/org-os-init/SKILL.md` — visual language and dashboard layout spec
+2. `docs/agent-plans/QUEUE.md` — active and queued plans
+3. `dashboard.yaml` — **dashboard configuration** that controls which sections to show, their order, and per-section options
 
-Read `docs/agent-plans/QUEUE.md` to know what plans are active, queued, and in scoping.
+## Step 4: Render Dashboard
 
-## Step 5: Render Dashboard
+You are now in **Phase 1: OPEN**. Using the JSON from Step 2 and the config from `dashboard.yaml`, render the dashboard.
 
-You are now in **Phase 1: OPEN**. Using the JSON from Step 2 and the visual spec from Step 3, render the full initialization dashboard:
+**Only render sections where `show: true`** (or where `show` is omitted, which defaults to true). Render them **in the order they appear in `dashboard.yaml`**. Respect per-section options:
 
-1. **ASCII block-letter banner** with the org name inside a `╭╰` panel
-2. **Active Projects** with IDEA stages and leads
-3. **Tasks** from HEARTBEAT.md grouped by urgency (⚡ critical, ◆ urgent, ◇ upcoming)
-4. **This Week** — events + meetings merged into a calendar strip
-5. **Funding** — only if deadlines within 30 days
-6. **Recent Context** — last 2-3 memory entries
-7. **Plan Queue** — show active and next queued plans from `docs/agent-plans/QUEUE.md`
-8. **Apps & Workspaces** — available packages and skills with launch commands
-9. **Cheatsheet** — key commands and session workflow
-10. **Federation** — upstream, peers, skills count
-11. **Session Prompt** — 3 contextual suggestions ranked by urgency, then open prompt
+| Section | Key options |
+|---------|------------|
+| `header` | `style: ascii` (block letters) or `style: compact` (single line) |
+| `projects` | `max:` limit count, `stages:` filter by IDEA stage |
+| `tasks` | `max:` per tier, `show_completed:` toggle completed tasks |
+| `calendar` | `days:` window (7 = week, 14 = two weeks) |
+| `funding` | `horizon_days:` only show deadlines within N days |
+| `context` | `max_entries:` number of recent memory entries |
+| `plans` | `queued_preview:` how many queued plans to show after active |
+| `apps` | (no options) |
+| `cheatsheet` | (no options) |
+| `federation` | (no options) |
+| `prompt` | `suggestions:` number of contextual suggestions |
 
-After the operator picks what to work on, transition to **Phase 2: PLAN** — load context, analyze, and present a tight work plan (5-7 steps max). Then execute.
+If `dashboard.yaml` has a `custom_sections` list, render each one after the built-in sections (or in the position where it's placed in the sections list). For custom sections, read the `source` file and render as `table`, `list`, or `summary` per the `render` field.
+
+If `dashboard.yaml` doesn't exist, render all sections with defaults.
+
+End with the session prompt and contextual suggestions, then wait for the operator to pick what to work on. Transition to **Phase 2: PLAN** — load context, analyze, and present a tight work plan (5-7 steps max). Then execute.
 
 $ARGUMENTS
