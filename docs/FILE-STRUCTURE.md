@@ -78,18 +78,6 @@ Machine-readable JSON schemas generated from `data/*.yaml`. Never edit directly 
 | `ideas.json` | data/ideas.yaml |
 | `knowledge.json` | data/knowledge-manifest.yaml |
 
-### `plans/` — Development Plans Pipeline (Required)
-
-Scoped work packages with lifecycle tracking. See [PLANS.md](PLANS.md) for the full convention.
-
-```
-plans/
-├── QUEUE.md              # Pipeline index — all plans by status
-└── [plan-slug].md        # Individual plans with YAML frontmatter
-```
-
-Plan lifecycle: `scoping` → `queued` → `active` → `completed` / `cancelled`
-
 ### `memory/` — Daily Operational Logs (Required)
 
 Daily markdown files capturing operational context. Append-only within a day.
@@ -192,6 +180,18 @@ Cloned external repos declared in `repos.manifest.json`.
 ### `docs/` — Instance Documentation (Optional)
 
 Instance-specific documentation, guides, reports.
+
+#### `docs/agent-plans/` — Development Plans Pipeline
+
+Scoped work packages with lifecycle tracking. See [PLANS.md](PLANS.md) for the full convention.
+
+```
+docs/agent-plans/
+├── QUEUE.md              # Pipeline index — all plans by status
+└── [plan-slug].md        # Individual plans with YAML frontmatter
+```
+
+Plan lifecycle: `scoping` → `queued` → `active` → `completed` / `cancelled`
 
 ### `.claude/` — Claude Code Configuration (Optional)
 

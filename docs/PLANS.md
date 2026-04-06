@@ -4,12 +4,12 @@ Version: 2.0.0
 
 ## Overview
 
-Every org-os instance uses a `plans/` directory to manage development and operational plans. Plans follow a pipeline lifecycle, enabling scoping, sequencing, and parallel execution across sessions.
+Every org-os instance uses a `docs/agent-plans/` directory to manage development and operational plans. Plans follow a pipeline lifecycle, enabling scoping, sequencing, and parallel execution across sessions.
 
 ## Directory Structure
 
 ```
-plans/
+docs/agent-plans/
 ├── QUEUE.md              # Pipeline index — single view of all plans by status
 └── [plan-slug].md        # Individual plan files with YAML frontmatter
 ```
@@ -104,7 +104,7 @@ Brief assessment of where things stand before execution.
 ## How Agents Use Plans
 
 ### On session start (`/initialize`)
-1. Agent reads `plans/QUEUE.md` to see what's active
+1. Agent reads `docs/agent-plans/QUEUE.md` to see what's active
 2. Agent reads the active plan(s) to understand current tasks
 3. Agent includes plan status in the session dashboard
 
@@ -130,8 +130,8 @@ Brief assessment of where things stand before execution.
 - **One plan per file** — don't combine unrelated work
 - **Break large plans** into phases if they'll span 5+ sessions
 - **Cross-repo plans** use `scope: all` and are tracked in the framework repo's QUEUE.md
-- **Instance-specific plans** live in the instance repo's `plans/`
-- **Framework plans** (affecting the template/standard) live in org-os `plans/`
+- **Instance-specific plans** live in the instance repo's `docs/agent-plans/`
+- **Framework plans** (affecting the template/standard) live in org-os `docs/agent-plans/`
 
 ## Relationship to Other Files
 
@@ -139,7 +139,8 @@ Brief assessment of where things stand before execution.
 |------|------|
 | `MASTERPLAN.md` | Strategic direction — what the org should focus on long-term |
 | `HEARTBEAT.md` | Operational pulse — today's urgent tasks and blockers |
-| `plans/QUEUE.md` | Development pipeline — scoped work packages with sequencing |
+| `docs/agent-plans/QUEUE.md` | Development pipeline — scoped work packages with sequencing |
+| `docs/agent-plans/*.md` | Individual plans with frontmatter, tasks, and verification |
 | `memory/*.md` | Session logs — what was done, decided, learned |
 
 MASTERPLAN.md says "where we're going." Plans say "how we get there, in what order."
