@@ -1,8 +1,8 @@
 {
-  "name": "organizational-os-template",
-  "description": "GitHub-based operational workspace template with EIP-4824 compliance",
+  "name": "refi-bcn-os",
+  "description": "Organizational OS for ReFi Barcelona — cooperative operations with EIP-4824 compliance",
   "private": true,
-  "version": "2.0.0",
+  "version": "1.0.0",
   "type": "module",
   "license": "MIT",
   "repository": {
@@ -11,26 +11,26 @@
   },
   "scripts": {
     "clone:repos": "node scripts/clone-linked-repos.mjs",
+    "index:repos": "node scripts/index-linked-repos.mjs",
     "bootstrap:local": "npm run clone:repos && npm install",
     "quartz": "./quartz/bootstrap-cli.mjs",
     "initialize": "node scripts/initialize.mjs",
     "setup": "node scripts/setup-org-os.mjs",
     "setup:cursor": "node scripts/setup-cursor-rules.mjs",
-    "sync": "node scripts/sync-github.mjs",
     "sync:upstream": "node scripts/sync-upstream.mjs",
+    "compile:knowledge": "node scripts/compile-knowledge.mjs && node scripts/update-knowledge-index.mjs",
+    "lint:knowledge": "node scripts/lint-knowledge.mjs",
+    "knowledge": "npm run compile:knowledge && npm run lint:knowledge",
     "generate:schemas": "node scripts/generate-all-schemas.mjs",
     "validate:schemas": "node scripts/validate-identity.mjs",
     "validate:structure": "node scripts/validate-structure.mjs",
-    "version:update": "node scripts/update-version.mjs",
+    "deploy:pages": "node scripts/deploy-pages.mjs",
+    "generate:dashboard": "node packages/dashboard/generate.mjs",
+    "build:site": "cd repos/refi-bcn-knowledge && npx quartz build",
+    "serve:site": "cd repos/refi-bcn-knowledge && npx quartz build --serve",
     "docs": "npx quartz build --serve -d docs",
     "check": "tsc --noEmit && npx prettier . --check",
-    "format": "npx prettier . --write",
-    "initialize": "node scripts/initialize.mjs",
-    "initialize:markdown": "node scripts/initialize.mjs --format=markdown",
-    "paperclip": "cd packages/paperclip-agents-app && npm run dev",
-    "paperclip:server": "cd packages/paperclip-agents-app && npm run dev:server",
-    "paperclip:build": "cd packages/paperclip-agents-app && npm run build:ui",
-    "deploy:pages": "node scripts/deploy-pages.mjs"
+    "format": "npx prettier . --write"
   },
   "engines": {
     "npm": ">=10.9.2",
@@ -49,6 +49,8 @@
   },
   "dependencies": {
     "@clack/prompts": "^0.11.0",
+    "@notionhq/client": "^3.1.0",
+    "dotenv": "^17.4.2",
     "gray-matter": "^4.0.3",
     "js-yaml": "^4.1.0",
     "prettier": "^3.6.2"

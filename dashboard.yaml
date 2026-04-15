@@ -1,60 +1,69 @@
-# dashboard.yaml — Controls what /initialize shows
+# dashboard.yaml — Controls what /initialize shows for ReFi BCN
 # Toggle sections on/off, reorder, and customize without deleting any files.
 #
 # Sections render in the order listed below.
 # Set `show: false` to hide a section. Set `show: true` (or omit) to show it.
-# Some sections accept extra options for fine-tuning.
 
 schema_version: "2.0"
-
-# ─── Dashboard Sections ──────────────────────────────────────────────────────
 
 sections:
 
   header:
     show: true
-    # style: "ascii" | "compact"
-    #   ascii   → full block-letter banner (default)
-    #   compact → single-line org name + status bar
     style: ascii
 
   projects:
     show: true
-    # max: how many projects to show (null = all)
     max: null
-    # stages: which IDEA stages to include (null = all)
-    # stages: [idea, develop, execute]
     stages: null
 
   tasks:
     show: true
-    # max: how many tasks per urgency tier (null = all)
     max: null
-    # show_completed: include recently completed tasks
     show_completed: true
 
   calendar:
     show: true
-    # days: how many days to show (7 = this week, 14 = two weeks)
     days: 7
 
   funding:
     show: true
-    # horizon_days: only show opportunities with deadlines within this window
     horizon_days: 30
 
   context:
     show: true
-    # max_entries: how many recent memory entries to show
     max_entries: 3
 
   plans:
     show: true
-    # Show active + next N queued plans from docs/agent-plans/QUEUE.md
     queued_preview: 2
+
+  pipelines:
+    show: true
+    pipelines:
+      - id: ideas
+        source: data/ideas.yaml
+        label: "Ideas"
+        stages: [surfaced, proposed, approved, developing, hatched]
+      - id: funding
+        source: data/funding-opportunities.yaml
+        label: "Funding"
+        stages: [monitoring, researching, applied, awarded]
+      - id: knowledge
+        source: data/knowledge-manifest.yaml
+        label: "Knowledge"
+        stages: [stub, partial, comprehensive]
+      - id: plans
+        source: docs/plans/QUEUE.md
+        label: "Plans"
+        stages: [backlog, queued, active, completed]
 
   apps:
     show: true
+    hide:
+      - dashboard
+      - task-manager
+      - schema-generator
 
   cheatsheet:
     show: true
@@ -64,19 +73,16 @@ sections:
 
   prompt:
     show: true
-    # suggestions: how many contextual suggestions to generate
     suggestions: 3
 
 # ─── Custom Sections ─────────────────────────────────────────────────────────
-# Add instance-specific sections here. The agent will render them after the
-# built-in sections (or in the position you place them above).
-#
+
 # custom_sections:
-#   - name: "Telegram Status"
+#   - name: "Telegram Topics"
 #     show: true
 #     source: "data/telegram-topic-routing.yaml"
-#     render: "table"       # table | list | summary
-#     description: "Active Telegram topics and routing"
+#     render: "table"
+#     description: "Active Telegram topics and routing rules"
 #
 #   - name: "Pending Payouts"
 #     show: true
