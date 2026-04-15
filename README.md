@@ -1,8 +1,8 @@
-# Organizational OS Template
+# Org-OS Template
 
-**GitHub-based operational workspace template with EIP-4824 compliance**
+**Agent-native organizational workspace template with EIP-4824 compliance**
 
-> This repository is a standalone mirror of `packages/template` in the canonical [organizational-os monorepo](https://github.com/regen-coordination/organizational-os). For active development, use the monorepo.
+> See also: [Org-OS Framework](https://github.com/regen-coordination/org-os-framework) — standards, schemas, and patterns.
 
 Transform your GitHub repository into a complete operational workspace for your organization (DAO, cooperative, nonprofit, project). Built on EIP-4824/DAOstar standards for organizational identity and interoperability.
 

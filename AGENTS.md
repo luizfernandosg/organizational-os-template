@@ -378,7 +378,7 @@ This workspace is part of a federation network (see `federation.yaml`).
 
 ## 11. Integration Points
 
-**Upstream**: [organizational-os](https://github.com/regen-coordination/organizational-os) — Framework standards, schemas, best practices
+**Upstream**: [org-os-framework](https://github.com/regen-coordination/org-os-framework) — Standards, schemas, and patterns
 
 **Common Integrations** (see `federation.yaml`):
 
